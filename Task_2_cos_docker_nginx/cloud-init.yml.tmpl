@@ -1,0 +1,31 @@
+#cloud-config
+
+users:
+- name: cloudservice
+  uid: 2000
+
+write_files:
+- path: /etc/systemd/system/myservice.service
+  permissions: 0644
+  owner: root
+  content: |
+    [Unit]
+    Description=My Service
+    Requires=docker.service network-online.target
+    After=docker.service network-online.target
+
+    [Service]
+    Environment="HOME=/home/cloudservice"
+    ExecStartPre=/usr/bin/docker login hub.docker.com -u dmkhitaryan -p Dummypasswordfordevopscourse123
+    ExecStart=/usr/bin/docker run --network=host --rm --name=myservice hub.docker.com/repository/docker/dmkhitaryan/devops-task2-nginx:latest
+    ExecStop=/usr/bin/docker stop myservice
+    Restart=on-failure
+    RestartSec=10
+
+    [Install]
+    WantedBy=multi-user.target
+
+runcmd:
+- iptables -A INPUT -p tcp -j ACCEPT
+- systemctl daemon-reload
+- systemctl enable --now --no-block myservice.service
